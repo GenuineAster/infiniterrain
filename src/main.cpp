@@ -26,7 +26,7 @@
 #include "ext/stb_image_write.h"
 
 constexpr const_vec<float> init_win_size(960.f, 540.f);
-constexpr const_vec<float> render_size(960.f, 540.f);
+constexpr const_vec<float> render_size(3840.f, 2560.f);
 
 // Camera struct
 struct camera {
@@ -346,18 +346,20 @@ int main()
 
 	glUseProgram(render_program);
 
-	constexpr const_vec<int> map_size(100, 100, 1);
+	constexpr const_vec<int> map_size(1000, 1000, 1);
 
 	std::vector<glm::vec2> map(map_size.x * map_size.y * 3 * 2);
 
+	float multiplier = 0.02f;
+
 	for(int x = 0; x < map_size.x; ++x) {
 		for(int y = 0; y < map_size.y; ++y) {
-			map[(x*map_size.y + y)*3*2 + 0] = glm::vec2(  x, y  );
-			map[(x*map_size.y + y)*3*2 + 1] = glm::vec2(x+1, y  );
-			map[(x*map_size.y + y)*3*2 + 2] = glm::vec2(x  , y+1);
-			map[(x*map_size.y + y)*3*2 + 3] = glm::vec2(x  , y+1);
-			map[(x*map_size.y + y)*3*2 + 4] = glm::vec2(x+1, y  );
-			map[(x*map_size.y + y)*3*2 + 5] = glm::vec2(x+1, y+1);
+			map[(x*map_size.y + y)*3*2 + 0] = glm::vec2(  x, y  ) * multiplier;
+			map[(x*map_size.y + y)*3*2 + 1] = glm::vec2(x+1, y  ) * multiplier;
+			map[(x*map_size.y + y)*3*2 + 2] = glm::vec2(x  , y+1) * multiplier;
+			map[(x*map_size.y + y)*3*2 + 3] = glm::vec2(x  , y+1) * multiplier;
+			map[(x*map_size.y + y)*3*2 + 4] = glm::vec2(x+1, y  ) * multiplier;
+			map[(x*map_size.y + y)*3*2 + 5] = glm::vec2(x+1, y+1) * multiplier;
 		}
 	}
 

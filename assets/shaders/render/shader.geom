@@ -12,17 +12,48 @@ out vec3 gTexcoords;
 float snoise(vec2);
 
 void main() {
-	col = vec3(0.0, 1.0, 0.0);
-	vec4 positions[3];
-	positions[0] = trans[0]*vec4(gl_in[0].gl_Position.xy, snoise(gl_in[0].gl_Position.xy*0.06), 1.0);
-	positions[1] = trans[1]*vec4(gl_in[1].gl_Position.xy, snoise(gl_in[1].gl_Position.xy*0.06), 1.0);
-	positions[2] = trans[2]*vec4(gl_in[2].gl_Position.xy, snoise(gl_in[2].gl_Position.xy*0.06), 1.0);
+	// vec3(0.0, 1.0, 0.0)
+	vec4 positions[3]; 
+	positions[0] = vec4(gl_in[0].gl_Position.xy, pow(snoise(gl_in[0].gl_Position.xy*0.06), 3)*10.0, 1.0);
+	if(positions[0].z < 0) {
+		positions[0].z = 0.0;
+	}
+
+	positions[1] = vec4(gl_in[1].gl_Position.xy, pow(snoise(gl_in[1].gl_Position.xy*0.06), 3)*10.0, 1.0);
+	if(positions[1].z < 0) {
+		positions[1].z = 0.0;
+	}
+
+	positions[2] = vec4(gl_in[2].gl_Position.xy, pow(snoise(gl_in[2].gl_Position.xy*0.06), 3)*10.0, 1.0);
+	if(positions[2].z < 0) {
+		positions[2].z = 0.0;
+	}
+	
 	gNormal = cross(vec3(positions[0] - positions[1]), vec3(positions[1] - positions[2]));
-	gl_Position = positions[0];
+	gNormal = normalize(transpose(inverse(mat3(trans[0])))*gNormal);
+	
+	if(positions[0].z <= 0.0) {
+		col = vec3(0.0, 0.0, 1.0);
+	} else {
+		col = vec3(0.0, 1.0, 0.0);
+	}
+	gl_Position = trans[0]*positions[0];
 	EmitVertex();
-	gl_Position = positions[1];
+	
+	if(positions[1].z <= 0.0) {
+		col = vec3(0.0, 0.0, 1.0);
+	} else {
+		col = vec3(0.0, 1.0, 0.0);
+	}
+	gl_Position = trans[1]*positions[1];
 	EmitVertex();
-	gl_Position = positions[2];
+	
+	if(positions[2].z <= 0.0) {
+		col = vec3(0.0, 0.0, 1.0);
+	} else {
+		col = vec3(0.0, 1.0, 0.0);
+	}
+	gl_Position = trans[2]*positions[2];
 	EmitVertex();
 	EndPrimitive();
 }

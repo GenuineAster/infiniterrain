@@ -132,5 +132,5 @@ void main()
 	// Mix colors
 	outCol = texture(colorTex, vTexcoords);
 	outCol.rgb *= 1.0-ao;
-	// outCol.rgb *= light_color;
+	outCol.rgb *= light_color;
 }
