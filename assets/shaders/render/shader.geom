@@ -10,6 +10,7 @@ out vec3 gNormal;
 out vec3 gTexcoords;
 
 float snoise(vec2);
+vec3 get_col(float);
 
 void main() {
 	// vec3(0.0, 1.0, 0.0)
@@ -32,30 +33,33 @@ void main() {
 	gNormal = cross(vec3(positions[0] - positions[1]), vec3(positions[1] - positions[2]));
 	gNormal = normalize(transpose(inverse(mat3(trans[0])))*gNormal);
 	
-	if(positions[0].z <= 0.0) {
-		col = vec3(0.0, 0.0, 1.0);
-	} else {
-		col = vec3(0.0, 1.0, 0.0);
-	}
+	col = get_col(positions[0].z);
 	gl_Position = trans[0]*positions[0];
 	EmitVertex();
 	
-	if(positions[1].z <= 0.0) {
-		col = vec3(0.0, 0.0, 1.0);
-	} else {
-		col = vec3(0.0, 1.0, 0.0);
-	}
+	col = get_col(positions[1].z);
 	gl_Position = trans[1]*positions[1];
 	EmitVertex();
 	
-	if(positions[2].z <= 0.0) {
-		col = vec3(0.0, 0.0, 1.0);
-	} else {
-		col = vec3(0.0, 1.0, 0.0);
-	}
+	col = get_col(positions[2].z);
 	gl_Position = trans[2]*positions[2];
 	EmitVertex();
 	EndPrimitive();
+}
+
+vec3 get_col(float z) {
+	z = pow(z/10.0, 1.0/3.0);
+	if(z <= 0.0) {
+		return vec3(0.0, 0.0, 1.0);
+	} else if (z <= 0.1) {
+		return vec3(1.0, 1.0, 0.0);
+	} else if (z <= 0.9) {
+		return vec3(0.0, 1.0, 0.0);
+	} else if (z <= 0.95) {
+		return vec3(0.7, 0.3, 0.0);
+	} else {
+		return vec3(1.0, 1.0, 1.0);
+	}
 }
 
 //
