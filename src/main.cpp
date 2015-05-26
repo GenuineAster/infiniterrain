@@ -22,6 +22,9 @@
 #include <ctime>
 #include <random>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "ext/stb_image_write.h"
+
 constexpr const_vec<float> init_win_size(960.f, 540.f);
 constexpr const_vec<float> render_size(960.f, 540.f);
 
@@ -402,12 +405,12 @@ int main()
 								topbottom_pixels[(x+y*int(render_size.x))*4+3] = pixels[(x+ny*int(render_size.x))*4+3];
 							}
 						}
-//						if(!stbi_write_png("/tmp/screenshot.png", render_size.x, render_size.y, 4, topbottom_pixels, 0)) {
-//							wlog.log(L"ERROR SAVING SCREENSHOT!\n");
-//						}
-//						else {
-//							wlog.log(L"????\n");
-//						}
+						if(!stbi_write_png("/tmp/screenshot.png", render_size.x, render_size.y, 4, topbottom_pixels, 0)) {
+							wlog.log(L"ERROR SAVING SCREENSHOT!\n");
+						}
+						else {
+							wlog.log(L"Screenshot saved to /tmp/screenshot.png \n");
+						}
 						delete[] pixels;
 					} break;
 				}
