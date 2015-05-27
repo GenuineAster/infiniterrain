@@ -56,6 +56,12 @@ void Shader::compile() {
 	glCompileShader(m_shader);
 }
 
+void Shader::destroy() {
+	if(*this)
+		glDeleteShader(m_shader);
+	m_shader = -1;
+}
+
 Shader::operator GLuint() {
 	return m_shader;
 }

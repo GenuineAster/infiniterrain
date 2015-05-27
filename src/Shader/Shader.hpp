@@ -18,6 +18,7 @@ public:
 	void set_src(std::string src);
 	void set_file(std::string src);
 	void compile();
+	void destroy();
 
 	Shader();
 	Shader(GLenum type);

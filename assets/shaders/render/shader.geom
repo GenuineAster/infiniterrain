@@ -9,26 +9,27 @@ out vec3 col;
 out vec3 gNormal;
 out vec3 gTexcoords;
 
+const float power = 11.0;
+const float multiplier = 8.0;
+const float threshold = 0.0;
+const float threshold_ = -0.85;
+const float reverse_period = 0.06;
+const float terrain_size_multiplier = 0.2;
+
 float snoise(vec2);
 vec3 get_col(float);
 
 void main() {
 	// vec3(0.0, 1.0, 0.0)
 	vec4 positions[3]; 
-	positions[0] = vec4(gl_in[0].gl_Position.xy, pow(snoise(gl_in[0].gl_Position.xy*0.06), 3)*10.0, 1.0);
-	if(positions[0].z < 0) {
-		positions[0].z = 0.0;
-	}
+	positions[0] = vec4(gl_in[0].gl_Position.xy*terrain_size_multiplier, pow((snoise(gl_in[0].gl_Position.xy*terrain_size_multiplier*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
+	positions[0].z = max(positions[0].z, threshold);
 
-	positions[1] = vec4(gl_in[1].gl_Position.xy, pow(snoise(gl_in[1].gl_Position.xy*0.06), 3)*10.0, 1.0);
-	if(positions[1].z < 0) {
-		positions[1].z = 0.0;
-	}
+	positions[1] = vec4(gl_in[1].gl_Position.xy*terrain_size_multiplier, pow((snoise(gl_in[1].gl_Position.xy*terrain_size_multiplier*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
+	positions[1].z = max(positions[1].z, threshold);
 
-	positions[2] = vec4(gl_in[2].gl_Position.xy, pow(snoise(gl_in[2].gl_Position.xy*0.06), 3)*10.0, 1.0);
-	if(positions[2].z < 0) {
-		positions[2].z = 0.0;
-	}
+	positions[2] = vec4(gl_in[2].gl_Position.xy*terrain_size_multiplier, pow((snoise(gl_in[2].gl_Position.xy*terrain_size_multiplier*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
+	positions[2].z = max(positions[2].z, threshold);
 	
 	gNormal = cross(vec3(positions[0] - positions[1]), vec3(positions[1] - positions[2]));
 	gNormal = normalize(transpose(inverse(mat3(trans[0])))*gNormal);
@@ -48,14 +49,14 @@ void main() {
 }
 
 vec3 get_col(float z) {
-	z = pow(z/10.0, 1.0/3.0);
-	if(z <= 0.0) {
+	z = pow(z/multiplier, 1.0/power);
+	if(z <= threshold) {
 		return vec3(0.0, 0.0, 1.0);
-	} else if (z <= 0.1) {
+	} else if (z <= threshold+0.1) {
 		return vec3(1.0, 1.0, 0.0);
-	} else if (z <= 0.9) {
-		return vec3(0.0, 1.0, 0.0);
-	} else if (z <= 0.95) {
+	} else if (z <= 0.85) {
+		return vec3(0.1, 0.9, 0.1);
+	} else if (z <= 0.92) {
 		return vec3(0.7, 0.3, 0.0);
 	} else {
 		return vec3(1.0, 1.0, 1.0);
@@ -96,8 +97,8 @@ float snoise(vec2 v)
 
 // Other corners
   vec2 i1;
-  //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0
-  //i1.y = 1.0 - i1.x;
+  // i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0
+  // i1.y = 1.0 - i1.x;
   i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
   // x0 = x0 - 0.0 + 0.0 * C.xx ;
   // x1 = x0 - i1 + 1.0 * C.xx ;

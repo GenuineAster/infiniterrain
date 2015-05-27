@@ -16,6 +16,7 @@ public:
 	void link();
 	void use();
 	void transform_feedback_varyings(std::vector<std::string> varyings, GLenum attrib_mode = GL_INTERLEAVED_ATTRIBS);
+	void recycle();
 
 	Program();
 	~Program();

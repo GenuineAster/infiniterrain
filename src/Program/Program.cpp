@@ -25,6 +25,11 @@ void Program::transform_feedback_varyings(std::vector<std::string> varyings, GLe
 	glTransformFeedbackVaryings(m_program, varyings.size(), v.data(), attrib_mode);
 }
 
+void Program::recycle() {
+	glDeleteProgram(m_program);
+	m_program = glCreateProgram();
+}
+
 Program::Program() {
 	m_program = glCreateProgram();
 }

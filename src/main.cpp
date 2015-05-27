@@ -68,6 +68,108 @@ constexpr float pi = 3.14159;
 
 Logger<wchar_t> wlog{std::wcout};
 
+Shader *shader_render_vert;
+Shader *shader_render_geom;
+Shader *shader_render_frag;
+Shader *shader_lighting_vert;
+Shader *shader_lighting_frag;
+Shader *shader_display_vert;
+Shader *shader_display_frag;
+Program *render_program;
+Program *lighting_program;
+Program *display_program;
+
+bool shaders_reloaded = false;
+bool limit_fps = true;
+
+bool load_shaders() {
+	shader_render_vert = new Shader;
+	shader_render_geom = new Shader;
+	shader_render_frag = new Shader;
+	shader_lighting_vert = new Shader;
+	shader_lighting_frag = new Shader;
+	shader_display_vert = new Shader;
+	shader_display_frag = new Shader;
+	render_program = new Program;
+	lighting_program = new Program;
+	display_program = new Program;
+
+
+	wlog.log(L"Creating Shaders.\n");
+
+	wlog.log(L"Creating render vertex shader.\n");
+	shader_render_vert->load_file(GL_VERTEX_SHADER, "assets/shaders/render/shader.vert");
+
+	wlog.log(L"Creating render geometry shader.\n");
+	shader_render_geom->load_file(GL_GEOMETRY_SHADER, "assets/shaders/render/shader.geom");
+
+	wlog.log(L"Creating render fragment shader.\n");
+	shader_render_frag->load_file(GL_FRAGMENT_SHADER, "assets/shaders/render/shader.frag");
+
+	wlog.log(L"Creating and linking render shader program.\n");
+
+	render_program->attach(*shader_render_vert);
+	render_program->attach(*shader_render_geom);
+	render_program->attach(*shader_render_frag);
+	glBindFragDataLocation(*render_program, 0, "outColor");
+	glBindFragDataLocation(*render_program, 1, "outNormal");
+	render_program->link();
+
+
+	wlog.log(L"Creating lighting vertex shader.\n");
+	shader_lighting_vert->load_file(GL_VERTEX_SHADER, "assets/shaders/lighting/shader.vert");
+
+	wlog.log(L"Creating lighting fragment shader.\n");
+	shader_lighting_frag->load_file(GL_FRAGMENT_SHADER, "assets/shaders/lighting/shader.frag");
+
+
+	wlog.log(L"Creating and linking lighting shader program.\n");
+
+	
+	lighting_program->attach(*shader_lighting_vert);
+	lighting_program->attach(*shader_lighting_frag);
+	glBindFragDataLocation(*lighting_program, 0, "outCol");
+	lighting_program->link();
+
+
+	wlog.log(L"Creating display vertex shader.\n");
+	
+	shader_display_vert->load_file(GL_VERTEX_SHADER, "assets/shaders/display/shader.vert");
+
+	wlog.log(L"Creating display fragment shader.\n");
+	
+	shader_display_frag->load_file(GL_FRAGMENT_SHADER, "assets/shaders/display/shader.frag");
+
+	wlog.log(L"Creating and linking display shader program.\n");
+
+	
+	display_program->attach(*shader_display_vert);
+	display_program->attach(*shader_display_frag);
+	glBindFragDataLocation(*display_program, 0, "color");
+	display_program->link();
+	return true;
+}
+
+bool destroy_shaders() {
+	delete shader_render_frag;
+	delete shader_render_geom;
+	delete shader_render_vert;
+	delete shader_lighting_frag;
+	delete shader_lighting_vert;
+	delete shader_display_frag;
+	delete shader_display_vert;
+	delete render_program;
+	delete lighting_program;
+	delete display_program;
+	return true;
+}
+
+bool reload_shaders() {
+	destroy_shaders();
+	load_shaders();
+	return true;
+}
+
 bool readfile(const char* filename, std::string &contents);
 bool process_gl_errors();
 
@@ -131,68 +233,11 @@ int main()
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	wlog.log(L"Creating Shaders.\n");
-	
-	wlog.log(L"Creating render vertex shader.\n");
-	Shader shader_render_vert;
-	shader_render_vert.load_file(GL_VERTEX_SHADER, "assets/shaders/render/shader.vert");
-
-	wlog.log(L"Creating render geometry shader.\n");
-	Shader shader_render_geom;
-	shader_render_geom.load_file(GL_GEOMETRY_SHADER, "assets/shaders/render/shader.geom");
-
-	wlog.log(L"Creating render fragment shader.\n");
-	Shader shader_render_frag;
-	shader_render_frag.load_file(GL_FRAGMENT_SHADER, "assets/shaders/render/shader.frag");
-
-	wlog.log(L"Creating and linking render shader program.\n");
-
-	Program render_program;
-	render_program.attach(shader_render_vert);
-	render_program.attach(shader_render_geom);
-	render_program.attach(shader_render_frag);
-	glBindFragDataLocation(render_program, 0, "outColor");
-	glBindFragDataLocation(render_program, 1, "outNormal");
-	render_program.link();
-
-
-	wlog.log(L"Creating lighting vertex shader.\n");
-	Shader shader_lighting_vert;
-	shader_lighting_vert.load_file(GL_VERTEX_SHADER, "assets/shaders/lighting/shader.vert");
-
-	wlog.log(L"Creating lighting fragment shader.\n");
-	Shader shader_lighting_frag;
-	shader_lighting_frag.load_file(GL_FRAGMENT_SHADER, "assets/shaders/lighting/shader.frag");
-
-
-	wlog.log(L"Creating and linking lighting shader program.\n");
-
-	Program lighting_program;
-	lighting_program.attach(shader_lighting_vert);
-	lighting_program.attach(shader_lighting_frag);
-	glBindFragDataLocation(lighting_program, 0, "outCol");
-	lighting_program.link();
-
-
-	wlog.log(L"Creating display vertex shader.\n");
-	Shader shader_display_vert;
-	shader_display_vert.load_file(GL_VERTEX_SHADER, "assets/shaders/display/shader.vert");
-
-	wlog.log(L"Creating display fragment shader.\n");
-	Shader shader_display_frag;
-	shader_display_frag.load_file(GL_FRAGMENT_SHADER, "assets/shaders/display/shader.frag");
-
-	wlog.log(L"Creating and linking display shader program.\n");
-
-	Program display_program;
-	display_program.attach(shader_display_vert);
-	display_program.attach(shader_display_frag);
-	glBindFragDataLocation(display_program, 0, "color");
-	display_program.link();
+	load_shaders();
 
 	process_gl_errors();
 
-	glUseProgram(render_program);
+	glUseProgram(*render_program);
 
 	glViewport(0.f, 0.f, win_size_x, win_size_y);
 
@@ -205,7 +250,7 @@ int main()
 
 	wlog.log(L"Creating and getting view uniform data.\n");
 	glm::mat4 view = cam.get_view();
-	GLint view_uni = glGetUniformLocation(render_program, "view");
+	GLint view_uni = glGetUniformLocation(*render_program, "view");
 	glUniformMatrix4fv(view_uni, 1, GL_FALSE, glm::value_ptr(view));
 
 	process_gl_errors();
@@ -215,21 +260,21 @@ int main()
 	glm::mat4 projection = glm::perspective(
 		pi/3.f, render_size.x/render_size.y, 0.01f, 3000.0f
 	);
-	GLint projection_uni = glGetUniformLocation(render_program, "projection");
+	GLint projection_uni = glGetUniformLocation(*render_program, "projection");
 	glUniformMatrix4fv(projection_uni, 1, GL_FALSE, glm::value_ptr(projection));
 
-	GLint render_spritesheet_uni = glGetUniformLocation(render_program, "spritesheet");
+	GLint render_spritesheet_uni = glGetUniformLocation(*render_program, "spritesheet");
 
 	process_gl_errors();
 
-	glUseProgram(lighting_program);
+	glUseProgram(*lighting_program);
 
-	GLint light_color_uni = glGetUniformLocation(lighting_program, "colorTex");
-	GLint light_normals_uni = glGetUniformLocation(lighting_program, "normalsTex");
-	GLint light_depth_uni = glGetUniformLocation(lighting_program, "depthTex");
-	GLint light_proj_uni = glGetUniformLocation(lighting_program, "projection");
+	GLint light_color_uni = glGetUniformLocation(*lighting_program, "colorTex");
+	GLint light_normals_uni = glGetUniformLocation(*lighting_program, "normalsTex");
+	GLint light_depth_uni = glGetUniformLocation(*lighting_program, "depthTex");
+	GLint light_proj_uni = glGetUniformLocation(*lighting_program, "projection");
 	glUniformMatrix4fv(light_proj_uni, 1, GL_FALSE, glm::value_ptr(projection));
-	GLint light_view_uni = glGetUniformLocation(lighting_program, "view");
+	GLint light_view_uni = glGetUniformLocation(*lighting_program, "view");
 	glUniformMatrix4fv(light_view_uni, 1, GL_FALSE, glm::value_ptr(view));
 
 	LightArray lights;
@@ -246,10 +291,10 @@ int main()
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, light_buffer);
 
 
-	GLint light_intensity_uni = glGetUniformLocation(lighting_program, "intensity");
-	GLint light_bias_uni = glGetUniformLocation(lighting_program, "bias");
-	GLint light_rad_uni = glGetUniformLocation(lighting_program, "sample_radius");
-	GLint light_scale_uni = glGetUniformLocation(lighting_program, "scale");
+	GLint light_intensity_uni = glGetUniformLocation(*lighting_program, "intensity");
+	GLint light_bias_uni = glGetUniformLocation(*lighting_program, "bias");
+	GLint light_rad_uni = glGetUniformLocation(*lighting_program, "sample_radius");
+	GLint light_scale_uni = glGetUniformLocation(*lighting_program, "scale");
 
 	process_gl_errors();
 
@@ -266,7 +311,7 @@ int main()
 	GLuint framebuffer_render_color_texture;
 	glGenTextures(1, &framebuffer_render_color_texture);
 	glActiveTexture(GL_TEXTURE0+4);
-	glProgramUniform1i(lighting_program, light_color_uni, 4);
+	glProgramUniform1i(*lighting_program, light_color_uni, 4);
 	glBindTexture(GL_TEXTURE_2D, framebuffer_render_color_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, render_size.x, render_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -276,7 +321,7 @@ int main()
 	GLuint framebuffer_render_normals_texture;
 	glGenTextures(1, &framebuffer_render_normals_texture);
 	glActiveTexture(GL_TEXTURE0+5);
-	glProgramUniform1i(lighting_program, light_normals_uni, 5);
+	glProgramUniform1i(*lighting_program, light_normals_uni, 5);
 	glBindTexture(GL_TEXTURE_2D, framebuffer_render_normals_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, render_size.x, render_size.y, 0, GL_RG, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -286,7 +331,7 @@ int main()
 	GLuint framebuffer_render_depth_texture;
 	glGenTextures(1, &framebuffer_render_depth_texture);
 	glActiveTexture(GL_TEXTURE0+6);
-	glProgramUniform1i(lighting_program, light_depth_uni, 6);
+	glProgramUniform1i(*lighting_program, light_depth_uni, 6);
 	glBindTexture(GL_TEXTURE_2D, framebuffer_render_depth_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, render_size.x, render_size.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -303,11 +348,11 @@ int main()
 	glGenFramebuffers(1, &framebuffer_display);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_display);
 
-	GLint framebuffer_uni = glGetUniformLocation(display_program, "framebuffer");
+	GLint framebuffer_uni = glGetUniformLocation(*display_program, "framebuffer");
 
 	glGenTextures(1, &framebuffer_display_color_texture);
 	glActiveTexture(GL_TEXTURE0+7);
-	glProgramUniform1i(display_program, framebuffer_uni, 7);
+	glProgramUniform1i(*display_program, framebuffer_uni, 7);
 	glBindTexture(GL_TEXTURE_2D, framebuffer_display_color_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, render_size.x, render_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -330,13 +375,13 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, fb_vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(fb_vertices), fb_vertices, GL_STATIC_DRAW);
 
-	GLint fb_vao_pos_attrib = glGetAttribLocation(display_program, "pos");
+	GLint fb_vao_pos_attrib = glGetAttribLocation(*display_program, "pos");
 	if(fb_vao_pos_attrib != -1) {
 		glEnableVertexAttribArray(fb_vao_pos_attrib);
 		glVertexAttribPointer(fb_vao_pos_attrib, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), 0);
 	}
 
-	GLint fb_vao_texcoord_attrib = glGetAttribLocation(display_program, "texcoords");
+	GLint fb_vao_texcoord_attrib = glGetAttribLocation(*display_program, "texcoords");
 	if(fb_vao_texcoord_attrib != -1) {
 		glEnableVertexAttribArray(fb_vao_texcoord_attrib);
 		glVertexAttribPointer(fb_vao_texcoord_attrib, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), BUFFER_OFFSET(sizeof(float)*2));
@@ -344,26 +389,24 @@ int main()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	glUseProgram(render_program);
+	glUseProgram(*render_program);
 
 	constexpr const_vec<int> map_size(1000, 1000, 1);
 
 	std::vector<glm::vec2> map(map_size.x * map_size.y * 3 * 2);
 
-	float multiplier = 0.02f;
-
 	for(int x = 0; x < map_size.x; ++x) {
 		for(int y = 0; y < map_size.y; ++y) {
-			map[(x*map_size.y + y)*3*2 + 0] = glm::vec2(  x, y  ) * multiplier;
-			map[(x*map_size.y + y)*3*2 + 1] = glm::vec2(x+1, y  ) * multiplier;
-			map[(x*map_size.y + y)*3*2 + 2] = glm::vec2(x  , y+1) * multiplier;
-			map[(x*map_size.y + y)*3*2 + 3] = glm::vec2(x  , y+1) * multiplier;
-			map[(x*map_size.y + y)*3*2 + 4] = glm::vec2(x+1, y  ) * multiplier;
-			map[(x*map_size.y + y)*3*2 + 5] = glm::vec2(x+1, y+1) * multiplier;
+			map[(x*map_size.y + y)*3*2 + 0] = glm::vec2(  x, y  );
+			map[(x*map_size.y + y)*3*2 + 1] = glm::vec2(x+1, y  );
+			map[(x*map_size.y + y)*3*2 + 2] = glm::vec2(x  , y+1);
+			map[(x*map_size.y + y)*3*2 + 3] = glm::vec2(x  , y+1);
+			map[(x*map_size.y + y)*3*2 + 4] = glm::vec2(x+1, y  );
+			map[(x*map_size.y + y)*3*2 + 5] = glm::vec2(x+1, y+1);
 		}
 	}
 
-	glUseProgram(render_program);
+	glUseProgram(*render_program);
 
 	GLuint map_vbo;
 	glGenBuffers(1, &map_vbo);
@@ -373,8 +416,8 @@ int main()
 	GLuint map_vao;
 	glGenVertexArrays(1, &map_vao);
 	glBindVertexArray(map_vao);
-	glVertexAttribPointer(glGetAttribLocation(render_program, "pos"), 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), BUFFER_OFFSET(0));
-	glEnableVertexAttribArray(glGetAttribLocation(render_program, "pos"));
+	glVertexAttribPointer(glGetAttribLocation(*render_program, "pos"), 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), BUFFER_OFFSET(0));
+	glEnableVertexAttribArray(glGetAttribLocation(*render_program, "pos"));
 
 	glfwSetKeyCallback(win, [](GLFWwindow*, int key, int, int action, int){
 		switch(action) {
@@ -415,6 +458,14 @@ int main()
 						}
 						delete[] pixels;
 					} break;
+					case GLFW_KEY_R: {
+						//Reload shaders
+						reload_shaders();
+						shaders_reloaded = true;
+					} break;
+					case GLFW_KEY_P: {
+						limit_fps = !limit_fps;
+					}
 				}
 			} break;
 		}
@@ -454,14 +505,68 @@ int main()
 			wlog.log(frametimestr);
 			cnt=0;
 			ft_total=0.L;
-			wlog.log(L"Position: {" + std::to_wstring(cam.position.x) + std::to_wstring(cam.position.y) + std::to_wstring(cam.position.z) + L"\n");
-			wlog.log(L"Position: {");
+			wlog.log(L"Position: {" + std::to_wstring(cam.position.x) + std::to_wstring(cam.position.y) + std::to_wstring(cam.position.z) + L"}\n");
 			// wlog.log(L"SSAO Intensity : \t" + std::to_wstring(intensity) + L"\n");
 			// wlog.log(L"SSAO Bias : \t" + std::to_wstring(bias) + L"\n");
 			// wlog.log(L"SSAO Scale : \t" + std::to_wstring(scale) + L"\n");
 			// wlog.log(L"SSAO Sample Radius : \t" + std::to_wstring(sample_radius) + L"\n");
 		}
 		start=end;
+
+		if(shaders_reloaded) {
+			shaders_reloaded = false;
+
+			glUseProgram(*render_program);
+
+			view_uni = glGetUniformLocation(*render_program, "view");
+			glUniformMatrix4fv(view_uni, 1, GL_FALSE, glm::value_ptr(view));
+
+			projection_uni = glGetUniformLocation(*render_program, "projection");
+			glUniformMatrix4fv(projection_uni, 1, GL_FALSE, glm::value_ptr(projection));
+
+			render_spritesheet_uni = glGetUniformLocation(*render_program, "spritesheet");
+
+			glUseProgram(*lighting_program);
+
+			light_color_uni = glGetUniformLocation(*lighting_program, "colorTex");
+			light_normals_uni = glGetUniformLocation(*lighting_program, "normalsTex");
+			light_depth_uni = glGetUniformLocation(*lighting_program, "depthTex");
+			light_proj_uni = glGetUniformLocation(*lighting_program, "projection");
+			glUniformMatrix4fv(light_proj_uni, 1, GL_FALSE, glm::value_ptr(projection));
+			light_view_uni = glGetUniformLocation(*lighting_program, "view");
+			glUniformMatrix4fv(light_view_uni, 1, GL_FALSE, glm::value_ptr(view));
+
+
+			light_intensity_uni = glGetUniformLocation(*lighting_program, "intensity");
+			light_bias_uni = glGetUniformLocation(*lighting_program, "bias");
+			light_rad_uni = glGetUniformLocation(*lighting_program, "sample_radius");
+			light_scale_uni = glGetUniformLocation(*lighting_program, "scale");
+
+			glProgramUniform1i(*lighting_program, light_color_uni, 4);
+			glProgramUniform1i(*lighting_program, light_normals_uni, 5);
+			glProgramUniform1i(*lighting_program, light_depth_uni, 6);
+			glProgramUniform1i(*display_program, framebuffer_uni, 7);
+
+			glBindBuffer(GL_ARRAY_BUFFER, map_vbo);
+			glBindVertexArray(map_vao);
+			glVertexAttribPointer(glGetAttribLocation(*render_program, "pos"), 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), BUFFER_OFFSET(0));
+			glEnableVertexAttribArray(glGetAttribLocation(*render_program, "pos"));
+
+			glBindBuffer(GL_ARRAY_BUFFER, fb_vbo);
+			glBindVertexArray(fb_vao);
+
+			fb_vao_pos_attrib = glGetAttribLocation(*display_program, "pos");
+			if(fb_vao_pos_attrib != -1) {
+				glEnableVertexAttribArray(fb_vao_pos_attrib);
+				glVertexAttribPointer(fb_vao_pos_attrib, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), 0);
+			}
+
+			fb_vao_texcoord_attrib = glGetAttribLocation(*display_program, "texcoords");
+			if(fb_vao_texcoord_attrib != -1) {
+				glEnableVertexAttribArray(fb_vao_texcoord_attrib);
+				glVertexAttribPointer(fb_vao_texcoord_attrib, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), BUFFER_OFFSET(sizeof(float)*2));
+			}
+		}
 
 		if(glfwGetKey(win, GLFW_KEY_W)) {
 			cam.rotate({-1.f, 0.f, 0.f}, fts_float*3.f);
@@ -502,42 +607,42 @@ int main()
 
 		if(glfwGetKey(win, GLFW_KEY_G)) {
 			intensity += 0.01;
-			glProgramUniform1f(lighting_program, light_intensity_uni, intensity);
+			glProgramUniform1f(*lighting_program, light_intensity_uni, intensity);
 		}
 		if(glfwGetKey(win, GLFW_KEY_V)) {
 			intensity -= 0.01;
-			glProgramUniform1f(lighting_program, light_intensity_uni, intensity);
+			glProgramUniform1f(*lighting_program, light_intensity_uni, intensity);
 		}
 		if(glfwGetKey(win, GLFW_KEY_H)) {
 			bias += 0.01;
-			glProgramUniform1f(lighting_program, light_bias_uni, bias);
+			glProgramUniform1f(*lighting_program, light_bias_uni, bias);
 		}
 		if(glfwGetKey(win, GLFW_KEY_B)) {
 			bias -= 0.01;
-			glProgramUniform1f(lighting_program, light_bias_uni, bias);
+			glProgramUniform1f(*lighting_program, light_bias_uni, bias);
 		}
 		if(glfwGetKey(win, GLFW_KEY_J)) {
 			sample_radius += 0.01;
-			glProgramUniform1f(lighting_program, light_rad_uni, sample_radius);
+			glProgramUniform1f(*lighting_program, light_rad_uni, sample_radius);
 		}
 		if(glfwGetKey(win, GLFW_KEY_N)) {
 			sample_radius -= 0.01;
-			glProgramUniform1f(lighting_program, light_rad_uni, sample_radius);
+			glProgramUniform1f(*lighting_program, light_rad_uni, sample_radius);
 		}
 		if(glfwGetKey(win, GLFW_KEY_K)) {
 			scale += 0.01;
-			glProgramUniform1f(lighting_program, light_scale_uni, scale);
+			glProgramUniform1f(*lighting_program, light_scale_uni, scale);
 		}
 		if(glfwGetKey(win, GLFW_KEY_M)) {
 			scale -= 0.01;
-			glProgramUniform1f(lighting_program, light_scale_uni, scale);
+			glProgramUniform1f(*lighting_program, light_scale_uni, scale);
 		}
 
-		glUseProgram(render_program);
+		glUseProgram(*render_program);
 
 		view = cam.get_view();
 		glUniformMatrix4fv(view_uni, 1, GL_FALSE, glm::value_ptr(view));
-		glProgramUniformMatrix4fv(lighting_program, light_view_uni, 1, GL_FALSE, glm::value_ptr(view));
+		glProgramUniformMatrix4fv(*lighting_program, light_view_uni, 1, GL_FALSE, glm::value_ptr(view));
 		glUniform1i(render_spritesheet_uni, 0);
 
 
@@ -560,7 +665,7 @@ int main()
 		glBindVertexArray(fb_vao);
 		glBindBuffer(GL_ARRAY_BUFFER, fb_vbo);
 
-		glUseProgram(lighting_program);
+		glUseProgram(*lighting_program);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_display);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -570,7 +675,7 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glUseProgram(display_program);
+		glUseProgram(*display_program);
 		glfwGetWindowSize(win, &win_size_x, &win_size_y);
 		glViewport(0.f, 0.f, win_size_x, win_size_y);
 
@@ -583,6 +688,9 @@ int main()
 		glfwSwapBuffers(win);
 		glfwPollEvents();
 		process_gl_errors();
+
+		if(limit_fps)
+			std::this_thread::sleep_for(std::chrono::milliseconds(20));
 	}
 
 	glfwDestroyWindow(win);
