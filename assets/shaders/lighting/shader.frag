@@ -1,8 +1,8 @@
 #version 430
 #define MAX_LIGHTS 128
 
-layout(depth_unchanged) out float gl_FragDepth;
-layout(early_fragment_tests) in;
+// layout(depth_unchanged) out float gl_FragDepth;
+// layout(early_fragment_tests) in;
 
 in vec2 vTexcoords;
 in mat4 inverseProjection;
@@ -133,4 +133,5 @@ void main()
 	outCol = texture(colorTex, vTexcoords);
 	outCol.rgb *= 1.0-ao;
 	outCol.rgb *= light_color;
+	outCol.a = 1.0;
 }

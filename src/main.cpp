@@ -26,7 +26,7 @@
 #include "ext/stb_image_write.h"
 
 constexpr const_vec<float> init_win_size(960.f, 540.f);
-constexpr const_vec<float> render_size(3840.f, 2560.f);
+constexpr const_vec<float> render_size(3840.f, 2160.f);
 
 // Camera struct
 struct camera {
@@ -81,6 +81,9 @@ Program *display_program;
 
 bool shaders_reloaded = false;
 bool limit_fps = true;
+bool lighting = true;
+bool draw_water = true;
+bool draw_land = true;
 
 bool load_shaders() {
 	shader_render_vert = new Shader;
@@ -193,7 +196,7 @@ int main()
 	wlog.log(L"Creating window.\n");
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-	glfwWindowHint(GLFW_DEPTH_BITS, 24);
+	glfwWindowHint(GLFW_DEPTH_BITS, 32);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
@@ -223,11 +226,6 @@ int main()
 		L"should be ignorable.\n"
 	);
 
-	glEnable(GL_DEPTH_TEST);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
-
-
 	wlog.log("Generating Vertex Array Object.\n");
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
@@ -253,6 +251,9 @@ int main()
 
 	GLint camera_position_uni = glGetUniformLocation(*render_program, "camera_position");
 	glUniform3fv(camera_position_uni, 1, glm::value_ptr(cam.position));
+
+	GLint draw_water_uni = glGetUniformLocation(*render_program, "draw_water");
+	glUniform1i(draw_water_uni, 0);
 
 	GLint view_uni = glGetUniformLocation(*render_program, "view");
 	glUniformMatrix4fv(view_uni, 1, GL_FALSE, glm::value_ptr(view));
@@ -308,6 +309,8 @@ int main()
 	// glFrontFace(GL_CW);
 	// glCullFace(GL_BACK);
 
+	glEnable(GL_FRAMEBUFFER_SRGB);
+
 	GLuint framebuffer_render;
 	glGenFramebuffers(1, &framebuffer_render);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_render);
@@ -317,7 +320,8 @@ int main()
 	glActiveTexture(GL_TEXTURE0+4);
 	glProgramUniform1i(*lighting_program, light_color_uni, 4);
 	glBindTexture(GL_TEXTURE_2D, framebuffer_render_color_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, render_size.x, render_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, render_size.x, render_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glEnablei(GL_BLEND, framebuffer_render_color_texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer_render_color_texture, 0);
@@ -358,7 +362,7 @@ int main()
 	glActiveTexture(GL_TEXTURE0+7);
 	glProgramUniform1i(*display_program, framebuffer_uni, 7);
 	glBindTexture(GL_TEXTURE_2D, framebuffer_display_color_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, render_size.x, render_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, render_size.x, render_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer_display_color_texture, 0);
@@ -469,7 +473,16 @@ int main()
 					} break;
 					case GLFW_KEY_P: {
 						limit_fps = !limit_fps;
-					}
+					} break;
+					case GLFW_KEY_L: {
+						lighting = !lighting;
+					} break;
+					case GLFW_KEY_O: {
+						draw_water = !draw_water;
+					} break;
+					case GLFW_KEY_I: {
+						draw_land = !draw_land;
+					} break;
 				}
 			} break;
 		}
@@ -487,6 +500,13 @@ int main()
 	float bias = 0.21;
 	float scale = 0.27;
 	float sample_radius = 0.20;
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendEquation(GL_FUNC_ADD);
+	// glBlendFuncSeparate(GL_SRC_COLOR, GL_ZERO, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	// glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
 
 	while(!glfwWindowShouldClose(win)) {
 		end = std::chrono::high_resolution_clock::now();
@@ -527,6 +547,9 @@ int main()
 
 			camera_position_uni = glGetUniformLocation(*render_program, "camera_position");
 			glUniform3fv(camera_position_uni, 1, glm::value_ptr(cam.position));
+
+			GLint draw_water_uni = glGetUniformLocation(*render_program, "draw_water");
+			glUniform1i(draw_water_uni, 0);
 
 			projection_uni = glGetUniformLocation(*render_program, "projection");
 			glUniformMatrix4fv(projection_uni, 1, GL_FALSE, glm::value_ptr(projection));
@@ -654,51 +677,66 @@ int main()
 		glUniform1i(render_spritesheet_uni, 0);
 
 
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_render);
-		// glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0.f, 0.f, render_size.x, render_size.y);
+		if(lighting) {
+			glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_render);
+			glViewport(0.f, 0.f, render_size.x, render_size.y);
+		}
+		else {
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBindBuffer(GL_ARRAY_BUFFER, map_vbo);
 		glBindVertexArray(map_vao);
-		glDrawArrays(GL_TRIANGLES, 0, map.size());
 
-		glDisable(GL_DEPTH_TEST);
-		
-		GLint poly_mode;
+		if(draw_land) {
+			glUniform1i(draw_water_uni, 0);
+			glDrawArrays(GL_TRIANGLES, 0, map.size());
+		}
+		if(draw_water) {
+			glUniform1i(draw_water_uni, 1);
+			glDrawArrays(GL_TRIANGLES, 0, map.size());
+		}
 
-		glGetIntegerv(GL_POLYGON_MODE, &poly_mode);
+		if(lighting) {
+			glDisable(GL_DEPTH_TEST);
+			
+			GLint poly_mode;
 
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			glGetIntegerv(GL_POLYGON_MODE, &poly_mode);
 
-		glBindVertexArray(fb_vao);
-		glBindBuffer(GL_ARRAY_BUFFER, fb_vbo);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		glUseProgram(*lighting_program);
+			glBindVertexArray(fb_vao);
+			glBindBuffer(GL_ARRAY_BUFFER, fb_vbo);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_display);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glUseProgram(*lighting_program);
 
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+			glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_display);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		glUseProgram(*display_program);
-		glfwGetWindowSize(win, &win_size_x, &win_size_y);
-		glViewport(0.f, 0.f, win_size_x, win_size_y);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+			glUseProgram(*display_program);
+			glfwGetWindowSize(win, &win_size_x, &win_size_y);
+			glViewport(0.f, 0.f, win_size_x, win_size_y);
 
-		glPolygonMode(GL_FRONT_AND_BACK, poly_mode);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		glEnable(GL_DEPTH_TEST);
+			glPolygonMode(GL_FRONT_AND_BACK, poly_mode);
+
+			glEnable(GL_DEPTH_TEST);
+		}
 
 		glfwSwapBuffers(win);
 		glfwPollEvents();
 		process_gl_errors();
 
 		if(limit_fps)
-			std::this_thread::sleep_for(std::chrono::milliseconds(20));
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	}
 
 	glfwDestroyWindow(win);

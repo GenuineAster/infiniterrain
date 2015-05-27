@@ -6,61 +6,103 @@ layout(triangle_strip, max_vertices = 3) out;
 in mat4 trans[];
 in mat3 normaltrans[];
 uniform vec3 camera_position;
-out vec3 col;
+uniform int draw_water;
+out vec4 col;
 out vec3 gNormal;
 out vec3 gTexcoords;
 
-const float power = 11.0;
-const float multiplier = 100.0;
-const float threshold = 0.0;
-const float threshold_ = -0.3;
+const int power = 11;
+const float multiplier = 10.0;
+const float threshold = -0.85;
+const float threshold_ = 0.00;
 const float reverse_period = 0.0125;
 const float terrain_size_multiplier = 1.0;
 
 float snoise(vec2);
-vec3 get_col(float);
+vec3 get_col(float,bool);
 
 void main() {
+	float tmp_threshold = sign(threshold)*pow(abs(threshold), power)*multiplier;
 	vec4 positions[3];
+	vec4 water_positions[3];
 	vec2 position;
 	ivec2 icamera_position = ivec2(camera_position);
 	position = gl_in[0].gl_Position.xy*terrain_size_multiplier;
 	position += -icamera_position.xy*terrain_size_multiplier;
-	positions[0] = vec4(position, pow((snoise(position*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
-	positions[0].z = max(positions[0].z, threshold);
+	float noise = snoise(position*reverse_period);
+	// (...-threshold_)/(1.0-threshold_)
+	positions[0] = vec4(position, (sign(noise)*pow(abs(noise), power)-threshold_)/(1.0-threshold_)*multiplier, 1.0);
+	water_positions[0] = positions[0];
+	water_positions[0].z = max(positions[0].z, tmp_threshold);
 
 	position = gl_in[1].gl_Position.xy*terrain_size_multiplier;
 	position += -icamera_position.xy*terrain_size_multiplier;
-	positions[1] = vec4(position, pow((snoise(position*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
-	positions[1].z = max(positions[1].z, threshold);
+	noise = snoise(position*reverse_period);
+	positions[1] = vec4(position, (sign(noise)*pow(abs(noise), power)-threshold_)/(1.0-threshold_)*multiplier, 1.0);
+	water_positions[1] = positions[1];
+	water_positions[1].z = max(positions[1].z, tmp_threshold);
 
 	position = gl_in[2].gl_Position.xy*terrain_size_multiplier;
 	position += -icamera_position.xy*terrain_size_multiplier;
-	positions[2] = vec4(position, pow((snoise(position*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
-	positions[2].z = max(positions[2].z, threshold);
+	noise = snoise(position*reverse_period);
+	positions[2] = vec4(position, (sign(noise)*pow(abs(noise), power)-threshold_)/(1.0-threshold_)*multiplier, 1.0);
+	water_positions[2] = positions[2];
+	water_positions[2].z = max(positions[2].z, tmp_threshold);
 	
-	gNormal = cross(vec3(positions[0] - positions[1]), vec3(positions[1] - positions[2]));
-	gNormal = normalize(transpose(inverse(mat3(trans[0])))*gNormal);
 	
-	col = get_col(positions[0].z) + get_col(positions[1].z) + get_col(positions[2].z);
-	col = col / 3.0;
-	gl_Position = trans[0]*positions[0];
-	EmitVertex();
-	
-	// col = get_col(positions[1].z);
-	gl_Position = trans[1]*positions[1];
-	EmitVertex();
-	
-	// col = get_col(positions[2].z);
-	gl_Position = trans[2]*positions[2];
-	EmitVertex();
-	EndPrimitive();
+	if(water_positions[0] != positions[0] && draw_water == 1) {
+		gNormal = cross(vec3(water_positions[0] - water_positions[1]), vec3(water_positions[1] - water_positions[2]));
+		gNormal = normalize(transpose(inverse(mat3(trans[0])))*gNormal);
+		
+		col.rgb = get_col(water_positions[0].z, true) + get_col(water_positions[1].z, true) + get_col(water_positions[2].z, true);
+		col = col / 3.0;
+		col.rgb = vec3(0.0, 0.0, 1.0);
+		col.a = 0.7;
+
+		water_positions[0].z += 0.08;
+		water_positions[1].z += 0.08;
+		water_positions[2].z += 0.08;
+
+		gl_Position = trans[0]*water_positions[0];
+		EmitVertex();
+		
+		// col = get_col(water_positions[1].z);
+		gl_Position = trans[1]*water_positions[1];
+		EmitVertex();
+		
+		// col = get_col(water_positions[2].z);
+		gl_Position = trans[2]*water_positions[2];
+		EmitVertex();
+		EndPrimitive();		
+	}
+
+	else if(draw_water == 0) {
+		gNormal = cross(vec3(positions[0] - positions[1]), vec3(positions[1] - positions[2]));
+		gNormal = normalize(transpose(inverse(mat3(trans[0])))*gNormal);
+
+		col.rgb = get_col(positions[0].z, false) + get_col(positions[1].z, false) + get_col(positions[2].z, false);
+		col = col / 3.0;
+		col.rgb = vec3(1.0, 0.0, 0.5);
+		col.a = 1.0;
+
+		gl_Position = trans[0]*positions[0];
+		EmitVertex();
+		
+		// col = get_col(positions[1].z);
+		gl_Position = trans[1]*positions[1];
+		EmitVertex();
+		
+		// col = get_col(positions[2].z);
+		gl_Position = trans[2]*positions[2];
+		EmitVertex();
+		EndPrimitive();
+	}
 }
 
-vec3 get_col(float z) {
-	z = pow(z/multiplier, 1.0/power);
-	if(z <= threshold) {
-		return vec3(0.0, 0.0, 1.0);
+vec3 get_col(float z, bool water) {
+	z = sign(z)*pow(abs(z/multiplier)* (1.0 - threshold_) + threshold_, 1.0/power);
+	if(z <= threshold && water) {
+		return vec3(0.0, 0.0, 0.6);
 	} else if (z <= threshold+0.1) {
 		return vec3(1.0, 1.0, 0.0);
 	} else if (z <= 0.85) {
