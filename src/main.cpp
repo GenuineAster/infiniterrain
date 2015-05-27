@@ -250,6 +250,10 @@ int main()
 
 	wlog.log(L"Creating and getting view uniform data.\n");
 	glm::mat4 view = cam.get_view();
+
+	GLint camera_position_uni = glGetUniformLocation(*render_program, "camera_position");
+	glUniform3fv(camera_position_uni, 1, glm::value_ptr(cam.position));
+
 	GLint view_uni = glGetUniformLocation(*render_program, "view");
 	glUniformMatrix4fv(view_uni, 1, GL_FALSE, glm::value_ptr(view));
 
@@ -391,18 +395,18 @@ int main()
 
 	glUseProgram(*render_program);
 
-	constexpr const_vec<int> map_size(1000, 1000, 1);
+	glm::vec2 map_size(1000.f, 1000.f);
 
-	std::vector<glm::vec2> map(map_size.x * map_size.y * 3 * 2);
+	std::vector<glm::vec2> map(int(map_size.x * map_size.y * 3 * 2));
 
 	for(int x = 0; x < map_size.x; ++x) {
 		for(int y = 0; y < map_size.y; ++y) {
-			map[(x*map_size.y + y)*3*2 + 0] = glm::vec2(  x, y  );
-			map[(x*map_size.y + y)*3*2 + 1] = glm::vec2(x+1, y  );
-			map[(x*map_size.y + y)*3*2 + 2] = glm::vec2(x  , y+1);
-			map[(x*map_size.y + y)*3*2 + 3] = glm::vec2(x  , y+1);
-			map[(x*map_size.y + y)*3*2 + 4] = glm::vec2(x+1, y  );
-			map[(x*map_size.y + y)*3*2 + 5] = glm::vec2(x+1, y+1);
+			map[(x*map_size.y + y)*3*2 + 0] = glm::vec2(  x, y  ) - map_size*0.5f;
+			map[(x*map_size.y + y)*3*2 + 1] = glm::vec2(x+1, y  ) - map_size*0.5f;
+			map[(x*map_size.y + y)*3*2 + 2] = glm::vec2(x  , y+1) - map_size*0.5f;
+			map[(x*map_size.y + y)*3*2 + 3] = glm::vec2(x  , y+1) - map_size*0.5f;
+			map[(x*map_size.y + y)*3*2 + 4] = glm::vec2(x+1, y  ) - map_size*0.5f;
+			map[(x*map_size.y + y)*3*2 + 5] = glm::vec2(x+1, y+1) - map_size*0.5f;
 		}
 	}
 
@@ -520,6 +524,9 @@ int main()
 
 			view_uni = glGetUniformLocation(*render_program, "view");
 			glUniformMatrix4fv(view_uni, 1, GL_FALSE, glm::value_ptr(view));
+
+			camera_position_uni = glGetUniformLocation(*render_program, "camera_position");
+			glUniform3fv(camera_position_uni, 1, glm::value_ptr(cam.position));
 
 			projection_uni = glGetUniformLocation(*render_program, "projection");
 			glUniformMatrix4fv(projection_uni, 1, GL_FALSE, glm::value_ptr(projection));
@@ -641,6 +648,7 @@ int main()
 		glUseProgram(*render_program);
 
 		view = cam.get_view();
+		glUniform3fv(camera_position_uni, 1, glm::value_ptr(cam.position));
 		glUniformMatrix4fv(view_uni, 1, GL_FALSE, glm::value_ptr(view));
 		glProgramUniformMatrix4fv(*lighting_program, light_view_uni, 1, GL_FALSE, glm::value_ptr(view));
 		glUniform1i(render_spritesheet_uni, 0);

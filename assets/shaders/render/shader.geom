@@ -5,6 +5,7 @@ layout(triangle_strip, max_vertices = 3) out;
 
 in mat4 trans[];
 in mat3 normaltrans[];
+uniform vec3 camera_position;
 out vec3 col;
 out vec3 gNormal;
 out vec3 gTexcoords;
@@ -14,21 +15,28 @@ const float multiplier = 8.0;
 const float threshold = 0.0;
 const float threshold_ = -0.85;
 const float reverse_period = 0.06;
-const float terrain_size_multiplier = 0.2;
+const float terrain_size_multiplier = 1.0;
 
 float snoise(vec2);
 vec3 get_col(float);
 
 void main() {
 	// vec3(0.0, 1.0, 0.0)
-	vec4 positions[3]; 
-	positions[0] = vec4(gl_in[0].gl_Position.xy*terrain_size_multiplier, pow((snoise(gl_in[0].gl_Position.xy*terrain_size_multiplier*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
+	vec4 positions[3];
+	vec2 position;
+	position = gl_in[0].gl_Position.xy*terrain_size_multiplier;
+	position += -camera_position.xy*terrain_size_multiplier;
+	positions[0] = vec4(position, pow((snoise(position*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
 	positions[0].z = max(positions[0].z, threshold);
 
-	positions[1] = vec4(gl_in[1].gl_Position.xy*terrain_size_multiplier, pow((snoise(gl_in[1].gl_Position.xy*terrain_size_multiplier*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
+	position = gl_in[1].gl_Position.xy*terrain_size_multiplier;
+	position += -camera_position.xy*terrain_size_multiplier;
+	positions[1] = vec4(position, pow((snoise(position*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
 	positions[1].z = max(positions[1].z, threshold);
 
-	positions[2] = vec4(gl_in[2].gl_Position.xy*terrain_size_multiplier, pow((snoise(gl_in[2].gl_Position.xy*terrain_size_multiplier*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
+	position = gl_in[2].gl_Position.xy*terrain_size_multiplier;
+	position += -camera_position.xy*terrain_size_multiplier;
+	positions[2] = vec4(position, pow((snoise(position*reverse_period)-threshold_)/(1.0-threshold_), power)*multiplier, 1.0);
 	positions[2].z = max(positions[2].z, threshold);
 	
 	gNormal = cross(vec3(positions[0] - positions[1]), vec3(positions[1] - positions[2]));
