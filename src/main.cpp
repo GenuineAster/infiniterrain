@@ -69,6 +69,8 @@ constexpr float pi = 3.14159;
 Logger<wchar_t> wlog{std::wcout};
 
 Shader *shader_render_vert;
+Shader *shader_render_tcs;
+Shader *shader_render_tes;
 Shader *shader_render_geom;
 Shader *shader_render_frag;
 Shader *shader_lighting_vert;
@@ -87,6 +89,8 @@ bool draw_land = true;
 
 bool load_shaders() {
 	shader_render_vert = new Shader;
+	shader_render_tcs = new Shader;
+	shader_render_tes = new Shader;
 	shader_render_geom = new Shader;
 	shader_render_frag = new Shader;
 	shader_lighting_vert = new Shader;
@@ -103,6 +107,12 @@ bool load_shaders() {
 	wlog.log(L"Creating render vertex shader.\n");
 	shader_render_vert->load_file(GL_VERTEX_SHADER, "assets/shaders/render/shader.vert");
 
+	wlog.log(L"Creating render TCS shader.\n");
+	shader_render_tes->load_file(GL_TESS_CONTROL_SHADER, "assets/shaders/render/shader.tcs");
+
+	wlog.log(L"Creating render geometry shader.\n");
+	shader_render_tcs->load_file(GL_TESS_EVALUATION_SHADER, "assets/shaders/render/shader.tes");
+
 	wlog.log(L"Creating render geometry shader.\n");
 	shader_render_geom->load_file(GL_GEOMETRY_SHADER, "assets/shaders/render/shader.geom");
 
@@ -112,6 +122,8 @@ bool load_shaders() {
 	wlog.log(L"Creating and linking render shader program.\n");
 
 	render_program->attach(*shader_render_vert);
+	render_program->attach(*shader_render_tcs);
+	render_program->attach(*shader_render_tes);
 	render_program->attach(*shader_render_geom);
 	render_program->attach(*shader_render_frag);
 	glBindFragDataLocation(*render_program, 0, "outColor");
@@ -155,6 +167,8 @@ bool load_shaders() {
 
 bool destroy_shaders() {
 	delete shader_render_frag;
+	delete shader_render_tcs;
+	delete shader_render_tes;
 	delete shader_render_geom;
 	delete shader_render_vert;
 	delete shader_lighting_frag;
@@ -243,6 +257,9 @@ int main()
 	wlog.log(L"Creating and getting camera position uniform data.\n");
 
 	camera cam;
+
+	cam.position = glm::vec3(0.f, 69.f, -20.f);
+	cam.rotate(glm::vec3(1.f, 0.f, 0.f), -pi/3.f);
 
 	process_gl_errors();
 
@@ -399,20 +416,24 @@ int main()
 
 	glUseProgram(*render_program);
 
-	glm::vec2 map_size(1000.f, 1000.f);
+	glm::vec2 map_size(100.f, 100.f);
+
+	float multiplier = 10.f;
 
 	std::vector<glm::vec2> map(int(map_size.x * map_size.y * 3 * 2));
 
 	for(int x = 0; x < map_size.x; ++x) {
 		for(int y = 0; y < map_size.y; ++y) {
-			map[(x*map_size.y + y)*3*2 + 0] = glm::vec2(  x, y  ) - map_size*0.5f;
-			map[(x*map_size.y + y)*3*2 + 1] = glm::vec2(x+1, y  ) - map_size*0.5f;
-			map[(x*map_size.y + y)*3*2 + 2] = glm::vec2(x  , y+1) - map_size*0.5f;
-			map[(x*map_size.y + y)*3*2 + 3] = glm::vec2(x  , y+1) - map_size*0.5f;
-			map[(x*map_size.y + y)*3*2 + 4] = glm::vec2(x+1, y  ) - map_size*0.5f;
-			map[(x*map_size.y + y)*3*2 + 5] = glm::vec2(x+1, y+1) - map_size*0.5f;
+			map[(x*map_size.y + y)*3*2 + 0] = (glm::vec2(  x, y  ) - map_size*0.5f) * multiplier;
+			map[(x*map_size.y + y)*3*2 + 1] = (glm::vec2(x+1, y  ) - map_size*0.5f) * multiplier;
+			map[(x*map_size.y + y)*3*2 + 2] = (glm::vec2(x  , y+1) - map_size*0.5f) * multiplier;
+			map[(x*map_size.y + y)*3*2 + 3] = (glm::vec2(x  , y+1) - map_size*0.5f) * multiplier;
+			map[(x*map_size.y + y)*3*2 + 4] = (glm::vec2(x+1, y  ) - map_size*0.5f) * multiplier;
+			map[(x*map_size.y + y)*3*2 + 5] = (glm::vec2(x+1, y+1) - map_size*0.5f) * multiplier;
 		}
 	}
+
+	glPatchParameteri(GL_PATCH_VERTICES, 3);
 
 	glUseProgram(*render_program);
 
@@ -424,8 +445,8 @@ int main()
 	GLuint map_vao;
 	glGenVertexArrays(1, &map_vao);
 	glBindVertexArray(map_vao);
-	glVertexAttribPointer(glGetAttribLocation(*render_program, "pos"), 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), BUFFER_OFFSET(0));
-	glEnableVertexAttribArray(glGetAttribLocation(*render_program, "pos"));
+	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), BUFFER_OFFSET(0));
+	glEnableVertexAttribArray(4);
 
 	glfwSetKeyCallback(win, [](GLFWwindow*, int key, int, int action, int){
 		switch(action) {
@@ -579,8 +600,8 @@ int main()
 
 			glBindBuffer(GL_ARRAY_BUFFER, map_vbo);
 			glBindVertexArray(map_vao);
-			glVertexAttribPointer(glGetAttribLocation(*render_program, "pos"), 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), BUFFER_OFFSET(0));
-			glEnableVertexAttribArray(glGetAttribLocation(*render_program, "pos"));
+			glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), BUFFER_OFFSET(0));
+			glEnableVertexAttribArray(4);
 
 			glBindBuffer(GL_ARRAY_BUFFER, fb_vbo);
 			glBindVertexArray(fb_vao);
@@ -691,11 +712,13 @@ int main()
 
 		if(draw_land) {
 			glUniform1i(draw_water_uni, 0);
-			glDrawArrays(GL_TRIANGLES, 0, map.size());
+			glDrawArrays(GL_PATCHES, 0, map.size());
+			// glDrawArrays(GL_TRIANGLES, 0, map.size());
 		}
 		if(draw_water) {
 			glUniform1i(draw_water_uni, 1);
-			glDrawArrays(GL_TRIANGLES, 0, map.size());
+			glDrawArrays(GL_PATCHES, 0, map.size());
+			// glDrawArrays(GL_TRIANGLES, 0, map.size());
 		}
 
 		if(lighting) {

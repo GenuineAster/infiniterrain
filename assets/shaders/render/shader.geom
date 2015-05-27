@@ -3,16 +3,18 @@
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
-in mat4 trans[];
-in mat3 normaltrans[];
+in mat4 teTrans[];
+in mat3 teNormalTrans[];
+in vec3 tePosition[];
 uniform vec3 camera_position;
 uniform int draw_water;
 out vec4 col;
 out vec3 gNormal;
 out vec3 gTexcoords;
+in mat4 trans[];
 
-const int power = 11;
-const float multiplier = 10.0;
+const int power = 23;
+const float multiplier = 100.0;
 const float threshold = -0.85;
 const float threshold_ = 0.00;
 const float reverse_period = 0.0125;
@@ -52,7 +54,7 @@ void main() {
 	
 	if(water_positions[0] != positions[0] && draw_water == 1) {
 		gNormal = cross(vec3(water_positions[0] - water_positions[1]), vec3(water_positions[1] - water_positions[2]));
-		gNormal = normalize(transpose(inverse(mat3(trans[0])))*gNormal);
+		gNormal = normalize(teNormalTrans[0]*gNormal);
 		
 		col.rgb = get_col(water_positions[0].z, true) + get_col(water_positions[1].z, true) + get_col(water_positions[2].z, true);
 		col = col / 3.0;
@@ -63,37 +65,37 @@ void main() {
 		water_positions[1].z += 0.08;
 		water_positions[2].z += 0.08;
 
-		gl_Position = trans[0]*water_positions[0];
+		gl_Position = teTrans[0]*water_positions[0];
 		EmitVertex();
 		
 		// col = get_col(water_positions[1].z);
-		gl_Position = trans[1]*water_positions[1];
+		gl_Position = teTrans[1]*water_positions[1];
 		EmitVertex();
 		
 		// col = get_col(water_positions[2].z);
-		gl_Position = trans[2]*water_positions[2];
+		gl_Position = teTrans[2]*water_positions[2];
 		EmitVertex();
 		EndPrimitive();		
 	}
 
 	else if(draw_water == 0) {
 		gNormal = cross(vec3(positions[0] - positions[1]), vec3(positions[1] - positions[2]));
-		gNormal = normalize(transpose(inverse(mat3(trans[0])))*gNormal);
+		gNormal = normalize(teNormalTrans[0]*gNormal);
 
 		col.rgb = get_col(positions[0].z, false) + get_col(positions[1].z, false) + get_col(positions[2].z, false);
 		col = col / 3.0;
 		col.rgb = vec3(1.0, 0.0, 0.5);
 		col.a = 1.0;
 
-		gl_Position = trans[0]*positions[0];
+		gl_Position = teTrans[0]*positions[0];
 		EmitVertex();
 		
 		// col = get_col(positions[1].z);
-		gl_Position = trans[1]*positions[1];
+		gl_Position = teTrans[1]*positions[1];
 		EmitVertex();
 		
 		// col = get_col(positions[2].z);
-		gl_Position = trans[2]*positions[2];
+		gl_Position = teTrans[2]*positions[2];
 		EmitVertex();
 		EndPrimitive();
 	}

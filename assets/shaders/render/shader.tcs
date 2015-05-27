@@ -1,0 +1,66 @@
+#version 430
+
+layout(vertices = 3) out;
+
+in mat4 trans[];
+in mat3 normaltrans[];
+in vec3 vPosition[];
+
+uniform vec3 camera_position;
+
+out mat4 tcTrans[];
+out mat3 tcNormalTrans[];
+out vec3 tcPosition[];
+
+float calc_tess_level(float);
+
+void main() {
+	float dist[3];
+	dist[0] = distance(gl_in[0].gl_Position.xy, vec2(0,0));
+	dist[1] = distance(gl_in[1].gl_Position.xy, vec2(0,0));
+	dist[2] = distance(gl_in[2].gl_Position.xy, vec2(0,0));
+
+	tcTrans[gl_InvocationID] = trans[gl_InvocationID];
+	tcNormalTrans[gl_InvocationID] = normaltrans[gl_InvocationID];
+
+	if(gl_InvocationID == 0) {
+		gl_TessLevelOuter[0] = calc_tess_level(0.5*(dist[1]+dist[2]));
+		gl_TessLevelOuter[1] = calc_tess_level(0.5*(dist[2]+dist[0]));
+		gl_TessLevelOuter[2] = calc_tess_level(0.5*(dist[0]+dist[1]));
+		gl_TessLevelInner[0] = gl_TessLevelOuter[2];
+	}
+	tcPosition[gl_InvocationID] = vPosition[gl_InvocationID];
+	gl_out[gl_InvocationID].gl_Position = vec4(vPosition[gl_InvocationID], 1.0);
+}
+
+float calc_tess_level(float avg) {
+	const float pth_mult = 1.0;
+	if(avg <= 50.0) {
+		return 10.0;
+	}
+	if(avg <= 75.0) {
+		return 9.0;
+	}
+	if(avg <= 100.0) {
+		return 8.0;
+	}
+	if(avg <= 125.0) {
+		return 7.0;
+	}
+	if(avg <= 200.0) {
+		return 6.0;
+	}
+	if(avg <= 250.0) {
+		return 5.0;
+	}
+	if(avg <= 350.0) {
+		return 4.0;
+	}
+	if(avg <= 450.0) {
+		return 3.0;
+	}
+	if(avg <= 600.0) {
+		return 2.0;
+	}
+	return 1.0;
+}

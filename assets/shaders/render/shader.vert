@@ -10,6 +10,7 @@ out vec3 vNormal;
 out vec3 vTexcoords;
 out mat4 trans;
 out mat3 normaltrans;
+out vec3 vPosition;
 // out vec3 col;
 
 void main()
@@ -18,6 +19,7 @@ void main()
 	normaltrans = transpose(inverse(mat3(trans)));
 	vTexcoords = texcoords;
 	gl_Position = vec4(pos, 1.0);
+	vPosition = vec3(gl_Position);
 	// col = mix(vec3(0.0, 1.0, 0.0), vec3(0.3, 0.8, 0.1), (snoise(pos.xy*0.1)+1.0)/2.0);
 
 }

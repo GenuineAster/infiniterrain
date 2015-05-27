@@ -1,0 +1,22 @@
+#version 430
+
+layout(triangles, equal_spacing, cw) in;
+
+in mat4 tcTrans[];
+in mat3 tcNormalTrans[];
+in vec3 tcPosition[];
+
+out mat4 teTrans;
+out mat3 teNormalTrans;
+out vec3 tePosition;
+out vec3 tePatchDistance;
+
+void main() {
+	teTrans = tcTrans[0];
+	teNormalTrans = tcNormalTrans[0];
+	vec4 p0 = gl_TessCoord.x * gl_in[0].gl_Position;
+	vec4 p1 = gl_TessCoord.y * gl_in[1].gl_Position;
+	vec4 p2 = gl_TessCoord.z * gl_in[2].gl_Position;
+	tePosition = vec3(p0 + p1 + p2);
+	gl_Position = vec4(tePosition, 1.0);
+}
