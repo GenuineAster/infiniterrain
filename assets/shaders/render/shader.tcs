@@ -6,8 +6,6 @@ in mat4 trans[];
 in mat3 normaltrans[];
 in vec3 vPosition[];
 
-uniform vec3 camera_position;
-
 out mat4 tcTrans[];
 out mat3 tcNormalTrans[];
 out vec3 tcPosition[];
@@ -36,19 +34,19 @@ void main() {
 float calc_tess_level(float avg) {
 	const float pth_mult = 1.0;
 	if(avg <= 50.0) {
-		return 10.0;
+		return 20.0;
 	}
 	if(avg <= 75.0) {
-		return 9.0;
+		return 17.0;
 	}
 	if(avg <= 100.0) {
-		return 8.0;
+		return 13.0;
 	}
 	if(avg <= 125.0) {
-		return 7.0;
+		return 10.0;
 	}
 	if(avg <= 200.0) {
-		return 6.0;
+		return 7.0;
 	}
 	if(avg <= 250.0) {
 		return 5.0;

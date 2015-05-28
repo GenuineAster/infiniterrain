@@ -619,6 +619,12 @@ int main()
 			}
 		}
 
+		float mult = 1.0f;
+
+		if(glfwGetKey(win, GLFW_KEY_LEFT_SHIFT)) {
+			mult = 0.3f;
+		}
+
 		if(glfwGetKey(win, GLFW_KEY_W)) {
 			cam.rotate({-1.f, 0.f, 0.f}, fts_float*3.f);
 		}
@@ -638,22 +644,22 @@ int main()
 			cam.rotate({ 0.f, 0.f, 1.f}, fts_float*3.f);
 		}
 		if(glfwGetKey(win, GLFW_KEY_UP)) {
-			cam.advance(fts_float*100.f);
+			cam.advance(mult*fts_float*100.f);
 		}
 		if(glfwGetKey(win, GLFW_KEY_DOWN)) {
-			cam.advance(fts_float*-100.f);
+			cam.advance(mult*fts_float*-100.f);
 		}
 		if(glfwGetKey(win, GLFW_KEY_RIGHT)) {
-			cam.strafe(fts_float*100.f);
+			cam.strafe(mult*fts_float*100.f);
 		}
 		if(glfwGetKey(win, GLFW_KEY_LEFT)) {
-			cam.strafe(fts_float*-100.f);
+			cam.strafe(mult*fts_float*-100.f);
 		}
 		if(glfwGetKey(win, GLFW_KEY_SPACE)) {
-			cam.climb(fts_float*100.f);
+			cam.climb(mult*fts_float*100.f);
 		}
 		if(glfwGetKey(win, GLFW_KEY_RIGHT_CONTROL)) {
-			cam.climb(fts_float*-100.f);
+			cam.climb(mult*fts_float*-100.f);
 		}
 
 		if(glfwGetKey(win, GLFW_KEY_G)) {
