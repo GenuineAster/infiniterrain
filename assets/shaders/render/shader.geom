@@ -13,19 +13,40 @@ out vec3 gNormal;
 out vec3 gTexcoords;
 in mat4 trans[];
 
-const int power = 11;
-const float multiplier = 50.0;
-const float threshold = -0.60;
+const float power = 1.0;
+const float multiplier = 100.0;
+const float threshold = -0.00;
 const float threshold_ = 0.0;
-const float reverse_period = 0.0125;
+const float reverse_period = 0.001;
 const float terrain_size_multiplier = 1.0;
 
 float snoise(vec2);
 float cnoise(vec2);
 float pnoise(vec2,vec2);
 
-float anoise(vec2 P) {
+float anoise_(vec2 P) {
 	return snoise(P);
+}
+
+float anoise(vec2 P) {
+	// float mountain = anoise_(P*0.125);
+	float land = anoise_(P*2.12124);
+	return (
+		anoise_(P) +
+		anoise_(P*2.22123135)/2.0 +
+		anoise_(P*3.14159)/4.0 +
+		anoise_(P*8.2545734565225)/8.0 +
+		anoise_(P*16.21231235)/16.0 +
+		anoise_(P*32.25123987)/32.0 +
+		anoise_(P*64.123123523425)/64.0 +
+		// anoise_(P*128.25)/128.0 +
+		// anoise_(P*256.25)/256.0 +
+		// anoise_(P*512.25)/512.0 +
+		// anoise_(P*1024.25)/1024.0 +
+		sign(land) * pow(abs(pow(abs(land), 3.0))*2.0, 3.0) +
+		// sign(mountain) * pow(abs(pow(abs(mountain), 100))*50.0, 7.0) +
+		0.0
+	) / 6.0;
 }
 
 vec3 get_col(float,bool);
@@ -37,25 +58,31 @@ void main() {
 	vec2 position;
 	ivec2 icamera_position = ivec2(camera_position);
 	position = ivec2(gl_in[0].gl_Position.xy)*terrain_size_multiplier;
-	position += -icamera_position.xy*terrain_size_multiplier;
+	position += -icamera_position.xy/* *terrain_size_multiplier */;
 	float noise = anoise(position*reverse_period);
 	// (...-threshold_)/(1.0-threshold_)
 	positions[0] = vec4(position, (sign(noise)*pow(abs(noise), power)-threshold_)/(1.0-threshold_)*multiplier, 1.0);
 	water_positions[0] = positions[0];
+	if(sign(positions[0].z)*pow(abs(positions[0].z/multiplier)* (1.0 - threshold_) + threshold_, 1.0/power) < threshold)
+			positions[0].z *= 10.0;
 	water_positions[0].z = max(positions[0].z, tmp_threshold);
 
 	position = ivec2(gl_in[1].gl_Position.xy)*terrain_size_multiplier;
-	position += -icamera_position.xy*terrain_size_multiplier;
+	position += -icamera_position.xy/* *terrain_size_multiplier */;
 	noise = anoise(position*reverse_period);
 	positions[1] = vec4(position, (sign(noise)*pow(abs(noise), power)-threshold_)/(1.0-threshold_)*multiplier, 1.0);
 	water_positions[1] = positions[1];
+	if(sign(positions[1].z)*pow(abs(positions[1].z/multiplier)* (1.0 - threshold_) + threshold_, 1.0/power) < threshold)
+			positions[1].z *= 10.0;
 	water_positions[1].z = max(positions[1].z, tmp_threshold);
 
 	position = ivec2(gl_in[2].gl_Position.xy)*terrain_size_multiplier;
-	position += -icamera_position.xy*terrain_size_multiplier;
+	position += -icamera_position.xy/* *terrain_size_multiplier */;
 	noise = anoise(position*reverse_period);
 	positions[2] = vec4(position, (sign(noise)*pow(abs(noise), power)-threshold_)/(1.0-threshold_)*multiplier, 1.0);
 	water_positions[2] = positions[2];
+	if(sign(positions[2].z)*pow(abs(positions[2].z/multiplier)* (1.0 - threshold_) + threshold_, 1.0/power) < threshold)
+			positions[2].z *= 10.0;
 	water_positions[2].z = max(positions[2].z, tmp_threshold);
 
 	if(draw_water == 1) {
@@ -98,14 +125,25 @@ void main() {
 		// col.rgb = vec3(1.0, 0.0, 0.5);
 		col.a = 1.0;
 
+		// if(sign(positions[0].z)*pow(abs(positions[0].z/multiplier)* (1.0 - threshold_) + threshold_, 1.0/power) < threshold)
+		// 	positions[0].z *= 1000.0;
+
 		gl_Position = teTrans[0]*positions[0];
 		EmitVertex();
 		
 		// col = get_col(positions[1].z);
+
+		// if(sign(positions[1].z)*pow(abs(positions[1].z/multiplier)* (1.0 - threshold_) + threshold_, 1.0/power) < threshold)
+		// 	positions[1].z *= 1000.0;
+
 		gl_Position = teTrans[1]*positions[1];
 		EmitVertex();
 		
 		// col = get_col(positions[2].z);
+
+		// if(sign(positions[2].z)*pow(abs(positions[2].z/multiplier)* (1.0 - threshold_) + threshold_, 1.0/power) < threshold)
+		// 	positions[2].z *= 1000.0;
+
 		gl_Position = teTrans[2]*positions[2];
 		EmitVertex();
 		EndPrimitive();
@@ -118,7 +156,7 @@ vec3 get_col(float z, bool water) {
 		return vec3(0.0, 0.0, 0.6);
 	} else if (z <= threshold && !water) {
 		return vec3(1.0, 1.0, 0.0);
-	} else if (z <= threshold+0.05) {
+	} else if (z <= threshold+0.01) {
 		return vec3(1.0, 1.0, 0.0);
 	} else if (z <= 0.85) {
 		return vec3(0.1, 0.9, 0.1);

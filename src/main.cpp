@@ -416,7 +416,7 @@ int main()
 
 	glUseProgram(*render_program);
 
-	glm::vec2 map_size(100.f, 100.f);
+	glm::vec2 map_size(200.f, 200.f);
 
 	float multiplier = 10.f;
 
@@ -765,7 +765,7 @@ int main()
 		process_gl_errors();
 
 		if(limit_fps)
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			std::this_thread::sleep_for(std::chrono::milliseconds(60));
 	}
 
 	glfwDestroyWindow(win);
